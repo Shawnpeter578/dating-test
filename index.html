@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <title>Romio - Find Your Match</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent; /* Disable tap highlight on mobile */
+        }
+        /* Custom class for the main card transition */
+        .card-transition {
+            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        }
+        .swipe-out-left {
+            transform: translateX(-150%) rotate(-15deg);
+            opacity: 0;
+        }
+        .swipe-out-right {
+            transform: translateX(150%) rotate(15deg);
+            opacity: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="w-screen h-screen flex">
+
+        <!-- Left Navigation (Desktop) -->
+        <nav class="hidden lg:flex flex-col items-center w-24 bg-white border-r border-gray-200 py-6">
+            <div class="flex items-center justify-center mb-10">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-pink-500"><path d="M11.14 8.86A2 2 0 1 0 8.86 11.14 2 2 0 0 0 11.14 8.86z"/><path d="m15 4-2 2"/><path d="m20 9-2-2"/><path d="M9 4 7 2"/><path d="m4 9-2-2"/><path d="M12 22s5.1-4.2 6.5-5.6c1.4-1.4 1.5-3.6.1-5.1-1.4-1.4-3.6-1.5-5.1-.1l-1.5 1.5-1.5-1.5c-1.5-1.4-3.7-1.3-5.1.1-1.4 1.4-1.3 3.7.1 5.1C6.9 17.8 12 22 12 22z"/></svg>
+            </div>
+            <div class="flex flex-col items-center space-y-8">
+                 <button class="p-2 text-pink-500 relative flex flex-col items-center space-y-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#f43f5e" stroke="#f43f5e" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                </button>
+                <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                </button>
+                <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                </button>
+                <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                </button>
+                <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </button>
+            </div>
+        </nav>
+        
+        <!-- Main Content Area -->
+        <div class="flex-grow flex items-center justify-center p-0 lg:p-4">
+            <!-- App Container (Mobile and Centered on Desktop) -->
+            <div class="w-full max-w-md h-full lg:h-[95vh] lg:max-h-[850px] bg-white lg:rounded-[40px] lg:shadow-2xl flex flex-col overflow-hidden relative lg:border-2 lg:border-gray-200">
+
+                <!-- Header -->
+                <header class="flex items-center justify-between p-4 flex-shrink-0">
+                    <h1 class="text-xl font-bold text-gray-800">Romio</h1>
+                    <button class="p-2 rounded-full hover:bg-gray-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-500"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                </header>
+
+                <!-- Profile Card Area -->
+                <main class="flex-grow p-2 pb-4 pt-0 relative flex flex-col">
+                    <div id="profile-card" class="relative w-full h-full lg:rounded-[32px] overflow-hidden shadow-lg card-transition">
+                        <!-- Profile Image -->
+                        <img id="profile-img" src="https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?q=80&w=1974&auto=format&fit=crop" class="w-full h-full object-cover" alt="Profile Picture">
+                        
+                        <!-- Filter button on top right -->
+                        <button class="absolute top-4 right-4 bg-fuchsia-500 p-3 rounded-full shadow-md hover:bg-fuchsia-600 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+                        </button>
+
+                        <!-- Gradient Overlay & Info -->
+                        <div class="absolute bottom-0 left-0 right-0 h-3/5 bg-gradient-to-t from-blue-700/80 via-blue-600/30 to-transparent px-6 pt-6 pb-24 flex flex-col justify-end text-white">
+                            <h2 id="profile-name" class="text-3xl font-bold">Sophiya Calzoni</h2>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <div class="flex items-center bg-white/30 backdrop-blur-sm rounded-full px-3 py-1 text-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                    <span id="profile-age">24 yr</span>
+                                </div>
+                                <div class="flex items-center bg-white/30 backdrop-blur-sm rounded-full px-3 py-1 text-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                    <span id="profile-location">Florida</span>
+                                </div>
+                                <div class="flex items-center bg-white/30 backdrop-blur-sm rounded-full px-3 py-1 text-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1.5"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    <span id="profile-distance">1.5 km</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Action buttons -->
+                        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center justify-center space-x-4 w-full z-10">
+                            <button id="dislike-btn" class="bg-white/95 w-16 h-16 flex items-center justify-center rounded-full shadow-lg backdrop-blur-sm hover:scale-110 transition-transform focus:outline-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                            </button>
+                            <button id="like-btn" class="bg-white/95 w-16 h-16 flex items-center justify-center rounded-full shadow-lg backdrop-blur-sm hover:scale-110 transition-transform focus:outline-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="#3b82f6" stroke="#3b82f6" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a2 2 0 0 1 3 1.88Z"/></svg>
+                            </button>
+                            <button class="bg-white/95 w-16 h-16 flex items-center justify-center rounded-full shadow-lg backdrop-blur-sm hover:scale-110 transition-transform focus:outline-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            </button>
+                        </div>
+                    </div>
+                </main>
+
+                <!-- Bottom Navigation (Mobile Only) -->
+                <nav class="lg:hidden flex-shrink-0 bg-white border-t border-gray-200 flex justify-around py-2">
+                    <button class="p-2 text-pink-500 relative flex flex-col items-center space-y-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#f43f5e" stroke="#f43f5e" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span class="absolute -bottom-1 w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
+                    </button>
+                    <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
+                    </button>
+                    <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                    </button>
+                    <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    </button>
+                    <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                    </button>
+                </nav>
+            </div>
+        </div>
+            
+        <!-- Matches Panel (Desktop Only) -->
+        <div class="hidden lg:flex flex-col w-96 bg-white border-l border-gray-200 p-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Your Matches</h2>
+            <div class="space-y-4 overflow-y-auto">
+                <!-- Match Item -->
+                <div class="flex items-center p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 cursor-pointer">
+                    <div class="relative">
+                        <img class="w-16 h-16 rounded-full object-cover" src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=1974&auto=format&fit=crop" alt="Jenna">
+                        <span class="absolute bottom-0 right-0 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></span>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="font-semibold text-lg">Jenna O.</h3>
+                        <p class="text-sm text-gray-500">Let's grab coffee!</p>
+                    </div>
+                </div>
+                <!-- Match Item -->
+                <div class="flex items-center p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 cursor-pointer">
+                    <img class="w-16 h-16 rounded-full object-cover" src="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop" alt="Maria">
+                    <div class="ml-4">
+                        <h3 class="font-semibold text-lg">Maria G.</h3>
+                        <p class="text-sm text-gray-500">You're so funny 😂</p>
+                    </div>
+                </div>
+                <!-- Match Item -->
+                <div class="flex items-center p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 cursor-pointer">
+                    <img class="w-16 h-16 rounded-full object-cover" src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1974&auto=format&fit=crop" alt="Alex">
+                    <div class="ml-4">
+                        <h3 class="font-semibold text-lg">Alex J.</h3>
+                        <p class="text-sm text-gray-500">Hey! How's your week going?</p>
+                    </div>
+                </div>
+                <!-- Match Item -->
+                <div class="flex items-center p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 cursor-pointer">
+                     <div class="relative">
+                        <img class="w-16 h-16 rounded-full object-cover" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1976&auto=format&fit=crop" alt="Samantha">
+                         <span class="absolute bottom-0 right-0 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></span>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="font-semibold text-lg">Samantha R.</h3>
+                        <p class="text-sm text-gray-500">Loved your profile!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- DOM Elements ---
+        const profileCard = document.getElementById('profile-card');
+        const profileImg = document.getElementById('profile-img');
+        const profileName = document.getElementById('profile-name');
+        const profileAge = document.getElementById('profile-age');
+        const profileLocation = document.getElementById('profile-location');
+        const profileDistance = document.getElementById('profile-distance');
+        const likeBtn = document.getElementById('like-btn');
+        const dislikeBtn = document.getElementById('dislike-btn');
+
+        // --- Mock User Data ---
+        const users = [
+            {
+                name: 'Sophiya Calzoni',
+                age: '24 yr',
+                location: 'Florida',
+                distance: '1.5 km',
+                img: 'https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?q=80&w=1974&auto=format&fit=crop'
+            },
+            {
+                name: 'Jenna Ortega',
+                age: '21 yr',
+                location: 'California',
+                distance: '5.2 km',
+                img: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=1974&auto=format&fit=crop'
+            },
+            {
+                name: 'Alex Johnson',
+                age: '26 yr',
+                location: 'New York',
+                distance: '0.8 km',
+                img: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1974&auto=format&fit=crop'
+            },
+            {
+                name: 'Maria Garcia',
+                age: '23 yr',
+                location: 'Miami',
+                distance: '2.1 km',
+                img: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop'
+            }
+        ];
+
+        let currentUserIndex = 0;
+        let isSwiping = false;
+
+        // --- Functions ---
+        
+        /**
+         * Renders a user's profile data onto the card.
+         * @param {object} user - The user object to display.
+         */
+        function renderProfile(user) {
+            profileImg.src = user.img;
+            profileName.textContent = user.name;
+            profileAge.textContent = user.age;
+            profileLocation.textContent = user.location;
+            profileDistance.textContent = user.distance;
+        }
+
+        /**
+         * Shows the next profile with a swipe animation.
+         * @param {string} direction - 'left' or 'right'.
+         */
+        function showNextProfile(direction) {
+            if (isSwiping) return; // Prevent multiple swipes at once
+            isSwiping = true;
+
+            // Add swipe animation class
+            profileCard.classList.add(direction === 'left' ? 'swipe-out-left' : 'swipe-out-right');
+
+            // Wait for the animation to finish
+            setTimeout(() => {
+                // Update the index, looping back to 0 if necessary
+                currentUserIndex = (currentUserIndex + 1) % users.length;
+                
+                // Hide the card momentarily to change content
+                profileCard.style.display = 'none';
+                
+                // Render the new profile
+                renderProfile(users[currentUserIndex]);
+                
+                // Remove animation classes
+                profileCard.classList.remove('swipe-out-left', 'swipe-out-right');
+
+                // Use requestAnimationFrame to ensure the content is updated before making it visible again
+                requestAnimationFrame(() => {
+                     profileCard.style.display = 'block';
+                     isSwiping = false;
+                });
+
+            }, 300); // Duration should match the CSS transition
+        }
+
+        // --- Event Listeners ---
+        likeBtn.addEventListener('click', () => showNextProfile('right'));
+        dislikeBtn.addEventListener('click', () => showNextProfile('left'));
+
+        // --- Initial Load ---
+        renderProfile(users[currentUserIndex]);
+
+    </script>
+
+</body>
+</html>
+
