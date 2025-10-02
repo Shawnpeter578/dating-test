@@ -1,289 +1,526 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale-1.0">
-    <title>Romio - Find Your Match</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Swipe</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/phosphor-icons"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            -webkit-tap-highlight-color: transparent; /* Disable tap highlight on mobile */
+            -webkit-tap-highlight-color: transparent; /* Prevent flash on tap for mobile */
+            overscroll-behavior-y: contain; /* Prevents pull-to-refresh on the body */
         }
-        /* Custom class for the main card transition */
-        .card-transition {
-            transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        .app-bg { background-color: #f0f2f5; }
+        .main-container {
+            max-width: 420px;
+            min-height: 100dvh; /* Use dynamic viewport height for better mobile browser support */
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            overscroll-behavior-y: contain;
         }
-        .swipe-out-left {
-            transform: translateX(-150%) rotate(-15deg);
-            opacity: 0;
+        
+        /* --- Swipe Card Styles --- */
+        #swipe-deck { perspective: 1000px; }
+        .swipe-card-stack {
+            display: grid;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            align-items: center;
+            justify-items: center;
         }
-        .swipe-out-right {
-            transform: translateX(150%) rotate(15deg);
-            opacity: 0;
+        .swipe-card {
+            touch-action: none; /* Critical for smooth custom dragging */
+            user-select: none;
+            position: absolute;
+            grid-column: 1 / -1;
+            grid-row: 1 / -1;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            height: 100%; 
+            width: 100%; 
+            will-change: transform, opacity; /* Performance hint for the browser */
+        }
+        .swipe-card.dragging { transition: none; }
+        .swipe-card-stack > :nth-child(2) {
+            transform: translateY(12px) scale(0.95);
+            filter: brightness(0.95);
+            z-index: -1;
+            transition: transform 0.4s ease-out, filter 0.4s ease-out;
+        }
+        .swipe-card-stack > :nth-child(3) {
+            transform: translateY(24px) scale(0.90);
+            filter: brightness(0.9);
+            z-index: -2;
+        }
+        .swipe-card-stack > :nth-child(n+4) { display: none; }
+        .like-nope-badge {
+            transition: opacity 0.2s ease-in;
+            will-change: opacity;
+        }
+        .swipe-card-image { height: 60%; }
+
+        /* Match animation */
+        @keyframes pop-in {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .match-animation { animation: pop-in 0.5s ease-out forwards; }
+
+        /* Custom scrollbar for chat */
+        .chat-messages::-webkit-scrollbar { width: 4px; }
+        .chat-messages::-webkit-scrollbar-thumb {
+            background-color: #d1d5db;
+            border-radius: 20px;
         }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="app-bg flex justify-center items-center">
 
-    <div class="w-screen h-screen flex">
+    <!-- Main App Container -->
+    <div id="appContainer" class="main-container w-full h-full bg-white shadow-2xl rounded-lg overflow-hidden relative">
 
-        <!-- Left Navigation (Desktop) -->
-        <nav class="hidden lg:flex flex-col items-center w-24 bg-white border-r border-gray-200 py-6">
-            <div class="flex items-center justify-center mb-10">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-pink-500"><path d="M11.14 8.86A2 2 0 1 0 8.86 11.14 2 2 0 0 0 11.14 8.86z"/><path d="m15 4-2 2"/><path d="m20 9-2-2"/><path d="M9 4 7 2"/><path d="m4 9-2-2"/><path d="M12 22s5.1-4.2 6.5-5.6c1.4-1.4 1.5-3.6.1-5.1-1.4-1.4-3.6-1.5-5.1-.1l-1.5 1.5-1.5-1.5c-1.5-1.4-3.7-1.3-5.1.1-1.4 1.4-1.3 3.7.1 5.1C6.9 17.8 12 22 12 22z"/></svg>
+        <!-- ===== Screen 1: Post to Play ===== -->
+        <div id="postScreen" class="flex flex-col items-center justify-center text-center h-full px-8 py-12 gap-12">
+            <div>
+                <div class="w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl flex items-center justify-center mb-6 shadow-lg mx-auto">
+                    <i class="ph-camera-plus" style="font-size: 48px; color: white;"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800">Post to Play</h1>
+                <p class="text-gray-600 mt-2">Share a photo to see today's batch.</p>
             </div>
-            <div class="flex flex-col items-center space-y-8">
-                 <button class="p-2 text-pink-500 relative flex flex-col items-center space-y-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#f43f5e" stroke="#f43f5e" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                </button>
-                <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
-                </button>
-                <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-                </button>
-                <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                </button>
-                <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                </button>
+            
+            <div class="bg-gray-100 p-6 rounded-2xl w-full">
+                <p class="text-gray-500 text-sm mb-2">TODAY'S PROMPT</p>
+                <p id="dailyPrompt" class="text-xl font-semibold text-gray-800">Your favorite study spot 📚</p>
             </div>
-        </nav>
-        
-        <!-- Main Content Area -->
-        <div class="flex-grow flex items-center justify-center p-0 lg:p-4">
-            <!-- App Container (Mobile and Centered on Desktop) -->
-            <div class="w-full max-w-md h-full lg:h-[95vh] lg:max-h-[850px] bg-white lg:rounded-[40px] lg:shadow-2xl flex flex-col overflow-hidden relative lg:border-2 lg:border-gray-200">
 
-                <!-- Header -->
-                <header class="flex items-center justify-between p-4 flex-shrink-0">
-                    <h1 class="text-xl font-bold text-gray-800">Romio</h1>
-                    <button class="p-2 rounded-full hover:bg-gray-100">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-500"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 0 2l-.15.08a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1 0-2l.15-.08a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
-                    </button>
-                </header>
-
-                <!-- Profile Card Area -->
-                <main class="flex-grow p-2 pb-4 pt-0 relative flex flex-col">
-                    <div id="profile-card" class="relative w-full h-full lg:rounded-[32px] overflow-hidden shadow-lg card-transition">
-                        <!-- Profile Image -->
-                        <img id="profile-img" src="https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?q=80&w=1974&auto=format&fit=crop" class="w-full h-full object-cover" alt="Profile Picture">
-                        
-                        <!-- Filter button on top right -->
-                        <button class="absolute top-4 right-4 bg-fuchsia-500 p-3 rounded-full shadow-md hover:bg-fuchsia-600 transition-colors">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
-                        </button>
-
-                        <!-- Gradient Overlay & Info -->
-                        <div class="absolute bottom-0 left-0 right-0 h-3/5 bg-gradient-to-t from-blue-700/80 via-blue-600/30 to-transparent px-6 pt-6 pb-24 flex flex-col justify-end text-white">
-                            <h2 id="profile-name" class="text-3xl font-bold">Sophiya Calzoni</h2>
-                            <div class="flex flex-wrap gap-2 mt-2">
-                                <div class="flex items-center bg-white/30 backdrop-blur-sm rounded-full px-3 py-1 text-sm">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                                    <span id="profile-age">24 yr</span>
-                                </div>
-                                <div class="flex items-center bg-white/30 backdrop-blur-sm rounded-full px-3 py-1 text-sm">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                                    <span id="profile-location">Florida</span>
-                                </div>
-                                <div class="flex items-center bg-white/30 backdrop-blur-sm rounded-full px-3 py-1 text-sm">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1.5"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                                    <span id="profile-distance">1.5 km</span>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- Action buttons -->
-                        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center justify-center space-x-4 w-full z-10">
-                            <button id="dislike-btn" class="bg-white/95 w-16 h-16 flex items-center justify-center rounded-full shadow-lg backdrop-blur-sm hover:scale-110 transition-transform focus:outline-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            </button>
-                            <button id="like-btn" class="bg-white/95 w-16 h-16 flex items-center justify-center rounded-full shadow-lg backdrop-blur-sm hover:scale-110 transition-transform focus:outline-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="#3b82f6" stroke="#3b82f6" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a2 2 0 0 1 3 1.88Z"/></svg>
-                            </button>
-                            <button class="bg-white/95 w-16 h-16 flex items-center justify-center rounded-full shadow-lg backdrop-blur-sm hover:scale-110 transition-transform focus:outline-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-                            </button>
-                        </div>
-                    </div>
-                </main>
-
-                <!-- Bottom Navigation (Mobile Only) -->
-                <nav class="lg:hidden flex-shrink-0 bg-white border-t border-gray-200 flex justify-around py-2">
-                    <button class="p-2 text-pink-500 relative flex flex-col items-center space-y-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="#f43f5e" stroke="#f43f5e" stroke-width="0" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                        <span class="absolute -bottom-1 w-1.5 h-1.5 bg-pink-500 rounded-full"></span>
-                    </button>
-                    <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon></svg>
-                    </button>
-                    <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-                    </button>
-                    <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    </button>
-                    <button class="p-2 text-gray-400 hover:text-pink-500 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    </button>
-                </nav>
+            <div>
+                <button onclick="startSwiping()" class="w-full bg-indigo-600 text-white font-bold py-4 px-6 rounded-full text-lg shadow-md hover:bg-indigo-700 transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Post Today's Photo
+                </button>
+                <p class="text-xs text-gray-400 mt-4">Uses in-app camera only. No uploads!</p>
             </div>
         </div>
-            
-        <!-- Matches Panel (Desktop Only) -->
-        <div class="hidden lg:flex flex-col w-96 bg-white border-l border-gray-200 p-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Your Matches</h2>
-            <div class="space-y-4 overflow-y-auto">
-                <!-- Match Item -->
-                <div class="flex items-center p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 cursor-pointer">
-                    <div class="relative">
-                        <img class="w-16 h-16 rounded-full object-cover" src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=1974&auto=format&fit=crop" alt="Jenna">
-                        <span class="absolute bottom-0 right-0 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></span>
+
+        <!-- ===== Screen 2: Swiping ===== -->
+        <div id="swipeScreen" class="hidden flex-grow flex flex-col relative overflow-hidden bg-gray-50">
+             <!-- Header -->
+            <div class="flex justify-between items-center p-4 border-b border-gray-200 bg-white z-10">
+                 <h1 class="text-2xl font-bold text-indigo-600">Daily Swipe</h1>
+                 <button onclick="showScreen('chatsListScreen')" class="p-2 rounded-full hover:bg-gray-100">
+                     <i class="ph-chats-teardrop" style="font-size: 28px; color: #4f46e5;"></i>
+                 </button>
+            </div>
+
+            <!-- Main Swipe Area -->
+            <div class="flex-grow w-full relative">
+                <!-- Swipe Deck (where cards live) -->
+                <div id="swipe-deck" class="absolute inset-x-4 top-4 bottom-32 flex items-center justify-center">
+                    <!-- Placeholder for end of batch -->
+                    <div id="endOfBatch" class="hidden text-center p-4">
+                        <div class="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mb-4 mx-auto">
+                            <i class="ph-timer" style="font-size: 40px; color: #6b7280;"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-800">That's everyone for today!</h2>
+                        <p class="text-gray-500 mt-1">Check back tomorrow for a new batch.</p>
                     </div>
-                    <div class="ml-4">
-                        <h3 class="font-semibold text-lg">Jenna O.</h3>
-                        <p class="text-sm text-gray-500">Let's grab coffee!</p>
-                    </div>
+                    <!-- Card stack will be generated here -->
                 </div>
-                <!-- Match Item -->
-                <div class="flex items-center p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 cursor-pointer">
-                    <img class="w-16 h-16 rounded-full object-cover" src="https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop" alt="Maria">
-                    <div class="ml-4">
-                        <h3 class="font-semibold text-lg">Maria G.</h3>
-                        <p class="text-sm text-gray-500">You're so funny 😂</p>
-                    </div>
+                
+                <!-- Action Buttons -->
+                <div id="action-buttons" class="absolute bottom-6 inset-x-0 flex justify-center items-center gap-6 z-10">
+                    <button onclick="handleSwipe('left')" class="w-20 h-20 rounded-full bg-white shadow-xl flex items-center justify-center text-red-500 hover:bg-red-50 transition-transform transform hover:scale-110 active:scale-100">
+                        <i class="ph-x" style="font-size: 40px;"></i>
+                    </button>
+                    <button onclick="handleSwipe('right')" class="w-24 h-24 rounded-full bg-white shadow-xl flex items-center justify-center text-green-500 hover:bg-green-50 transition-transform transform hover:scale-110 active:scale-100">
+                        <i class="ph-heart" style="font-size: 48px;"></i>
+                    </button>
                 </div>
-                <!-- Match Item -->
-                <div class="flex items-center p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 cursor-pointer">
-                    <img class="w-16 h-16 rounded-full object-cover" src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1974&auto=format&fit=crop" alt="Alex">
-                    <div class="ml-4">
-                        <h3 class="font-semibold text-lg">Alex J.</h3>
-                        <p class="text-sm text-gray-500">Hey! How's your week going?</p>
-                    </div>
+            </div>
+        </div>
+        
+        <!-- ===== Screen 3: Chats List ===== -->
+        <div id="chatsListScreen" class="hidden flex-grow flex flex-col">
+            <!-- Header -->
+            <div class="flex items-center p-4 border-b border-gray-200">
+                 <button onclick="showScreen('swipeScreen')" class="p-2 mr-2 rounded-full hover:bg-gray-100">
+                     <i class="ph-arrow-left" style="font-size: 24px; color: #4f46e5;"></i>
+                 </button>
+                 <h1 class="text-2xl font-bold text-indigo-600">Matches</h1>
+            </div>
+            <!-- Chat List -->
+            <div id="chatListContainer" class="flex-grow overflow-y-auto p-2">
+                <!-- Chat items will be injected here -->
+            </div>
+        </div>
+
+        <!-- ===== Screen 4: Chat View ===== -->
+        <div id="chatViewScreen" class="hidden flex-grow flex flex-col">
+            <!-- Chat Header -->
+            <div class="flex items-center p-3 border-b border-gray-200 bg-white">
+                 <button onclick="showScreen('swipeScreen')" class="p-2 mr-2 rounded-full hover:bg-gray-100">
+                     <i class="ph-arrow-left" style="font-size: 24px; color: #4f46e5;"></i>
+                 </button>
+                 <img id="chatPartnerAvatar" src="https://placehold.co/40x40/E2E8F0/4A5568?text=A" class="w-10 h-10 rounded-full mr-3 object-cover" loading="lazy" decoding="async">
+                 <div>
+                    <h2 id="chatPartnerName" class="font-bold text-lg text-gray-800"></h2>
+                    <p class="text-sm text-gray-500">Active now</p>
+                 </div>
+            </div>
+            <!-- Messages Area -->
+            <div id="chatMessages" class="chat-messages flex-grow p-4 overflow-y-auto bg-gray-50">
+                <!-- Messages will be injected here -->
+            </div>
+            <!-- Message Input -->
+            <div class="p-3 bg-white border-t border-gray-200">
+                <form id="messageForm" class="flex items-center bg-gray-100 rounded-full px-4 py-2">
+                    <input id="messageInput" type="text" placeholder="Type a message..." class="flex-grow bg-transparent focus:outline-none text-gray-700">
+                    <button type="submit" class="ml-2 p-2 rounded-full bg-indigo-600 text-white hover:bg-indigo-700 transition">
+                        <i class="ph-paper-plane-tilt-fill" style="font-size: 20px;"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ===== Pop-up: It's a Match! ===== -->
+        <div id="matchPopup" class="hidden absolute inset-0 bg-black bg-opacity-70 flex items-center justify-center p-8 z-50">
+            <div class="match-animation bg-white p-8 rounded-3xl text-center shadow-2xl max-w-sm w-full">
+                <h2 class="text-4xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 text-transparent bg-clip-text mb-4">It's a Match!</h2>
+                <p class="text-gray-600 mb-6">You and <span id="matchName" class="font-bold"></span> liked each other.</p>
+                <div class="flex justify-center items-center space-x-[-20px] mb-8">
+                    <img id="matchUserAvatar" src="https://placehold.co/100x100/c7d2fe/312e81?text=Me" class="w-28 h-28 rounded-full border-4 border-white shadow-md object-cover" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/100x100/E2E8F0/4A5568?text=U';">
+                    <img id="matchPartnerAvatar" src="https://placehold.co/100x100/E2E8F0/4A5568?text=P" class="w-28 h-28 rounded-full border-4 border-white shadow-md object-cover" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/100x100/E2E8F0/4A5568?text=P';">
                 </div>
-                <!-- Match Item -->
-                <div class="flex items-center p-3 bg-gray-50 rounded-2xl hover:bg-gray-100 cursor-pointer">
-                     <div class="relative">
-                        <img class="w-16 h-16 rounded-full object-cover" src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=1976&auto=format&fit=crop" alt="Samantha">
-                         <span class="absolute bottom-0 right-0 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></span>
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="font-semibold text-lg">Samantha R.</h3>
-                        <p class="text-sm text-gray-500">Loved your profile!</p>
-                    </div>
-                </div>
+                <button onclick="openChatFromMatch()" class="w-full bg-indigo-600 text-white font-bold py-3 px-6 rounded-full text-lg shadow-md hover:bg-indigo-700 transition-transform transform hover:scale-105 mb-3">
+                    Send a Message
+                </button>
+                <button onclick="closeMatchPopup()" class="w-full bg-gray-200 text-gray-700 font-bold py-3 px-6 rounded-full hover:bg-gray-300 transition">
+                    Keep Swiping
+                </button>
             </div>
         </div>
     </div>
 
-
     <script>
-        // --- DOM Elements ---
-        const profileCard = document.getElementById('profile-card');
-        const profileImg = document.getElementById('profile-img');
-        const profileName = document.getElementById('profile-name');
-        const profileAge = document.getElementById('profile-age');
-        const profileLocation = document.getElementById('profile-location');
-        const profileDistance = document.getElementById('profile-distance');
-        const likeBtn = document.getElementById('like-btn');
-        const dislikeBtn = document.getElementById('dislike-btn');
+        // --- DOM Elements (cached for performance) ---
+        const screens = {
+            post: document.getElementById('postScreen'),
+            swipe: document.getElementById('swipeScreen'),
+            chatsList: document.getElementById('chatsListScreen'),
+            chatView: document.getElementById('chatViewScreen'),
+        };
+        const dailyPromptEl = document.getElementById('dailyPrompt');
+        const swipeDeck = document.getElementById('swipe-deck');
+        const endOfBatchEl = document.getElementById('endOfBatch');
+        const actionButtonsEl = document.getElementById('action-buttons');
+        const matchPopup = document.getElementById('matchPopup');
+        const matchNameEl = document.getElementById('matchName');
+        const chatListContainer = document.getElementById('chatListContainer');
+        const matchUserAvatar = document.getElementById('matchUserAvatar');
+        const matchPartnerAvatar = document.getElementById('matchPartnerAvatar');
+        const chatPartnerAvatar = document.getElementById('chatPartnerAvatar');
+        const chatPartnerName = document.getElementById('chatPartnerName');
+        const chatMessagesContainer = document.getElementById('chatMessages');
+        const messageForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('messageInput');
 
-        // --- Mock User Data ---
+        // --- Mock Data ---
+        const prompts = ["Your favorite study spot 📚", "What's for lunch today? 🍕", "Campus view from your window 🌳", "Show off your coffee order ☕", "Your current lecture hall 🧑‍🏫"];
         const users = [
-            {
-                name: 'Sophiya Calzoni',
-                age: '24 yr',
-                location: 'Florida',
-                distance: '1.5 km',
-                img: 'https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?q=80&w=1974&auto=format&fit=crop'
-            },
-            {
-                name: 'Jenna Ortega',
-                age: '21 yr',
-                location: 'California',
-                distance: '5.2 km',
-                img: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?q=80&w=1974&auto=format&fit=crop'
-            },
-            {
-                name: 'Alex Johnson',
-                age: '26 yr',
-                location: 'New York',
-                distance: '0.8 km',
-                img: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?q=80&w=1974&auto=format&fit=crop'
-            },
-            {
-                name: 'Maria Garcia',
-                age: '23 yr',
-                location: 'Miami',
-                distance: '2.1 km',
-                img: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=1961&auto=format&fit=crop'
-            }
+            { id: 'u1', name: 'Ava', age: 20, major: 'CompSci', img: 'https://images.unsplash.com/photo-1520405230983-a213a1e3b00c?q=80&w=800&auto=format&fit=crop', promptResponse: 'Quiet corner in the library!' },
+            { id: 'u2', name: 'Leo', age: 22, major: 'Engineering', img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=800&auto=format&fit=crop', promptResponse: 'Fueling up at the cafe.' },
+            { id: 'u3', name: 'Mia', age: 21, major: 'Art History', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=800&auto=format&fit=crop', promptResponse: 'Found some sun on the main quad.' },
+            { id: 'u4', name: 'Noah', age: 19, major: 'Physics', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=800&auto=format&fit=crop', promptResponse: 'Lab day vibes.' },
+            { id: 'u5', name: 'Chloe', age: 20, major: 'Literature', img: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=800&auto=format&fit=crop', promptResponse: 'Reading by the campus lake.' },
+            { id: 'u6', name: 'Ben', age: 23, major: 'Business', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?q=80&w=800&auto=format&fit=crop', promptResponse: 'Networking event attire.' },
+            { id: 'u7', name: 'Sophie', age: 21, major: 'Psychology', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=800&auto=format&fit=crop', promptResponse: 'Observing campus life for a project.' },
+            { id: 'u8', name: 'Jack', age: 20, major: 'Kinesiology', img: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?q=80&w=800&auto=format&fit=crop', promptResponse: 'Post-workout protein shake.' },
+        ];
+        let matches = [
+            { id: 1, user: users[1], lastMessage: 'Hey! Saw we matched. Cool photo!', unread: 1, messages: [{ sender: 'them', text: 'Haha thanks! Your study spot looks so peaceful.' }, { sender: 'me', text: 'It\'s the only way to get work done here 😂' }, { sender: 'them', text: 'Hey! Saw we matched. Cool photo!' },] },
+            { id: 2, user: users[4], lastMessage: 'You too! Great minds think alike.', unread: 0, messages: [{ sender: 'me', text: 'No way, we had the same lunch! 🍕' }, { sender: 'them', text: 'You too! Great minds think alike.' }] }
         ];
 
-        let currentUserIndex = 0;
-        let isSwiping = false;
+        // --- App State ---
+        let currentBatch = [];
+        let currentIndex = 0;
+        let activeCard = null;
+        let startPoint = { x: 0 };
+        let currentMatch = null;
+        let isDragging = false;
+        let animationFrameId = null;
+        let currentChatId = null;
 
         // --- Functions ---
+        function showScreen(screenId) {
+            Object.values(screens).forEach(screen => screen.classList.add('hidden'));
+            if (screens[screenId]) {
+                screens[screenId].classList.remove('hidden');
+                screens[screenId].classList.add('flex');
+            }
+        }
+
+        function initializeApp() {
+            dailyPromptEl.textContent = prompts[Math.floor(Math.random() * prompts.length)];
+            renderChatList();
+            messageForm.addEventListener('submit', sendMessage);
+            showScreen('post');
+        }
         
-        /**
-         * Renders a user's profile data onto the card.
-         * @param {object} user - The user object to display.
-         */
-        function renderProfile(user) {
-            profileImg.src = user.img;
-            profileName.textContent = user.name;
-            profileAge.textContent = user.age;
-            profileLocation.textContent = user.location;
-            profileDistance.textContent = user.distance;
+        // --- Card Swiping Logic ---
+        function startSwiping() {
+            currentBatch = [...users].sort(() => 0.5 - Math.random());
+            currentIndex = 0;
+            showScreen('swipe');
+
+            const oldStack = swipeDeck.querySelector('.swipe-card-stack');
+            if (oldStack) oldStack.remove();
+            
+            const newStack = document.createElement('div');
+            newStack.className = 'swipe-card-stack';
+            swipeDeck.prepend(newStack);
+            
+            actionButtonsEl.style.display = 'flex';
+            endOfBatchEl.classList.add('hidden');
+
+            if (currentBatch.length === 0) {
+                endOfBatchEl.classList.remove('hidden');
+                actionButtonsEl.style.display = 'none';
+                return;
+            }
+
+            currentBatch.forEach(user => {
+                const card = createCardElement(user);
+                newStack.appendChild(card);
+            });
+            
+            addListenersToTopCard();
+        }
+        
+        function createCardElement(user) {
+            const card = document.createElement('div');
+            card.className = 'swipe-card flex flex-col bg-white rounded-2xl overflow-hidden shadow-xl cursor-grab';
+            card.innerHTML = `
+                <div class="swipe-card-image">
+                    <img src="${user.img}" class="w-full h-full object-cover" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='https://placehold.co/600x800/E2E8F0/4A5568?text=Image+Error';">
+                </div>
+                <div class="p-5 flex flex-col justify-between flex-grow">
+                    <div>
+                        <h3 class="text-2xl font-bold text-gray-800">${user.name}, ${user.age}</h3>
+                        <p class="text-gray-500">${user.major}</p>
+                        <div class="mt-3 border-t pt-3 text-gray-600">
+                           <p>"${user.promptResponse}"</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="like-nope-badge absolute top-8 right-8 text-green-400 border-4 border-green-400 rounded-xl py-2 px-4 text-4xl font-bold uppercase tracking-wider transform -rotate-10 opacity-0" data-badge="like">Like</div>
+                <div class="like-nope-badge absolute top-8 left-8 text-red-500 border-4 border-red-500 rounded-xl py-2 px-4 text-4xl font-bold uppercase tracking-wider transform rotate-10 opacity-0" data-badge="nope">Nope</div>
+            `;
+            return card;
+        }
+        
+        function addListenersToTopCard() {
+             const topCard = swipeDeck.querySelector('.swipe-card-stack > :first-child');
+             if (topCard) {
+                 topCard.addEventListener('mousedown', onDragStart);
+                 topCard.addEventListener('touchstart', onDragStart, { passive: true });
+             }
         }
 
-        /**
-         * Shows the next profile with a swipe animation.
-         * @param {string} direction - 'left' or 'right'.
-         */
-        function showNextProfile(direction) {
-            if (isSwiping) return; // Prevent multiple swipes at once
-            isSwiping = true;
+        function handleSwipe(direction) {
+            const cardEl = swipeDeck.querySelector('.swipe-card-stack > :first-child');
+            if (!cardEl) return;
+            
+            const isRightSwipe = direction === 'right';
+            cardEl.style.transition = 'transform 0.4s ease-out';
+            const rotation = isRightSwipe ? 20 : -20;
+            const translateX = isRightSwipe ? window.innerWidth : -window.innerWidth;
+            cardEl.style.transform = `translateX(${translateX}px) rotate(${rotation}deg)`;
 
-            // Add swipe animation class
-            profileCard.classList.add(direction === 'left' ? 'swipe-out-left' : 'swipe-out-right');
-
-            // Wait for the animation to finish
+            if (isRightSwipe && Math.random() > 0.6) { 
+                currentMatch = currentBatch[currentIndex];
+                setTimeout(() => showMatchPopup(currentMatch), 250);
+            }
+            
             setTimeout(() => {
-                // Update the index, looping back to 0 if necessary
-                currentUserIndex = (currentUserIndex + 1) % users.length;
-                
-                // Hide the card momentarily to change content
-                profileCard.style.display = 'none';
-                
-                // Render the new profile
-                renderProfile(users[currentUserIndex]);
-                
-                // Remove animation classes
-                profileCard.classList.remove('swipe-out-left', 'swipe-out-right');
-
-                // Use requestAnimationFrame to ensure the content is updated before making it visible again
-                requestAnimationFrame(() => {
-                     profileCard.style.display = 'block';
-                     isSwiping = false;
-                });
-
-            }, 300); // Duration should match the CSS transition
+                cardEl.remove();
+                currentIndex++;
+                addListenersToTopCard();
+                if (swipeDeck.querySelector('.swipe-card-stack > :first-child') === null) {
+                    endOfBatchEl.classList.remove('hidden');
+                    actionButtonsEl.style.display = 'none';
+                }
+            }, 400);
         }
 
-        // --- Event Listeners ---
-        likeBtn.addEventListener('click', () => showNextProfile('right'));
-        dislikeBtn.addEventListener('click', () => showNextProfile('left'));
+        function onDragStart(e) {
+            if (isDragging) return;
+            isDragging = true;
+            activeCard = e.currentTarget;
+            startPoint.x = e.pageX ?? e.touches[0].pageX;
+            
+            activeCard.classList.add('dragging');
+            document.addEventListener('mousemove', onDragMove);
+            document.addEventListener('touchmove', onDragMove, { passive: true });
+            document.addEventListener('mouseup', onDragEnd);
+            document.addEventListener('touchend', onDragEnd);
 
-        // --- Initial Load ---
-        renderProfile(users[currentUserIndex]);
+            animationFrameId = requestAnimationFrame(updateCardPosition);
+        }
 
+        let lastX = 0;
+        function onDragMove(e) {
+            if (!activeCard) return;
+            lastX = e.pageX ?? e.touches[0].pageX;
+        }
+
+        function updateCardPosition() {
+            if (!isDragging || !activeCard) return;
+
+            const diffX = lastX - startPoint.x;
+            const rotate = diffX / 20;
+
+            activeCard.style.transform = `translateX(${diffX}px) rotate(${rotate}deg)`;
+            
+            const likeBadge = activeCard.querySelector('[data-badge="like"]');
+            const nopeBadge = activeCard.querySelector('[data-badge="nope"]');
+            
+            const opacity = Math.min(Math.abs(diffX) / 100, 1);
+            if (diffX > 0) {
+                likeBadge.style.opacity = opacity;
+                nopeBadge.style.opacity = 0;
+            } else {
+                nopeBadge.style.opacity = opacity;
+                likeBadge.style.opacity = 0;
+            }
+
+            animationFrameId = requestAnimationFrame(updateCardPosition);
+        }
+
+        function onDragEnd(e) {
+            if (!isDragging || !activeCard) return;
+            isDragging = false;
+            cancelAnimationFrame(animationFrameId);
+
+            document.removeEventListener('mousemove', onDragMove);
+            document.removeEventListener('touchmove', onDragMove);
+            document.removeEventListener('mouseup', onDragEnd);
+            document.removeEventListener('touchend', onDragEnd);
+
+            const diffX = lastX - startPoint.x;
+            if (Math.abs(diffX) > 100) {
+                handleSwipe(diffX > 0 ? 'right' : 'left');
+            } else {
+                activeCard.style.transform = '';
+                activeCard.querySelector('[data-badge="like"]').style.opacity = 0;
+                activeCard.querySelector('[data-badge="nope"]').style.opacity = 0;
+            }
+            activeCard.classList.remove('dragging');
+            activeCard = null;
+        }
+
+        function showMatchPopup(matchedUser) {
+            matchNameEl.textContent = matchedUser.name;
+            matchPartnerAvatar.src = matchedUser.img;
+            matchPopup.classList.remove('hidden');
+        }
+
+        function closeMatchPopup() { matchPopup.classList.add('hidden'); }
+        
+        function openChatFromMatch() {
+             if (currentMatch) {
+                let existingMatch = matches.find(m => m.user.id === currentMatch.id);
+                if (!existingMatch) {
+                    const newMatch = { id: matches.length + 1, user: currentMatch, lastMessage: "You can start the conversation!", unread: 0, messages: [] };
+                    matches.unshift(newMatch);
+                    renderChatList();
+                    existingMatch = newMatch;
+                }
+                openChat(existingMatch.id);
+            }
+            closeMatchPopup();
+        }
+
+        function renderChatList() {
+            chatListContainer.innerHTML = '';
+            if (matches.length === 0) {
+                 chatListContainer.innerHTML = `<div class="text-center p-8 text-gray-500"><i class="ph-chat-circle-dots text-5xl"></i><p class="mt-2">Your matches will appear here.</p></div>`;
+                 return;
+            }
+            const fragment = document.createDocumentFragment();
+            matches.forEach(match => {
+                const chatItem = document.createElement('div');
+                chatItem.className = 'flex items-center p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100';
+                chatItem.onclick = () => openChat(match.id);
+                chatItem.innerHTML = `<img src="${match.user.img}" class="w-16 h-16 rounded-full mr-4 object-cover" loading="lazy" decoding="async"><div class="flex-grow"><div class="flex justify-between items-center"><h3 class="font-bold text-lg text-gray-800">${match.user.name}</h3>${match.unread > 0 ? `<span class="bg-indigo-600 text-white text-xs font-bold rounded-full px-2 py-1">${match.unread}</span>` : ''}</div><p class="text-gray-500 truncate">${match.lastMessage}</p></div>`;
+                fragment.appendChild(chatItem);
+            });
+            chatListContainer.appendChild(fragment);
+        }
+        
+        function openChat(matchId) {
+            const match = matches.find(m => m.id === matchId);
+            if (!match) return;
+            
+            currentChatId = matchId;
+            match.unread = 0; // Mark as read
+            renderChatList(); // Update the list to remove the badge
+
+            chatPartnerName.textContent = match.user.name;
+            chatPartnerAvatar.src = match.user.img;
+            
+            renderMessages(match);
+            showScreen('chatView');
+        }
+
+        function renderMessages(match) {
+            chatMessagesContainer.innerHTML = '';
+            if (match.messages.length === 0) {
+                chatMessagesContainer.innerHTML = `<div class="text-center text-sm text-gray-400 p-4">You matched with ${match.user.name}. Start the conversation!</div>`;
+            } else {
+                const fragment = document.createDocumentFragment();
+                match.messages.forEach(msg => {
+                    const messageEl = document.createElement('div');
+                    const isMe = msg.sender === 'me';
+                    messageEl.className = `flex mb-3 ${isMe ? 'justify-end' : 'justify-start'}`;
+                    messageEl.innerHTML = `<div class="max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${isMe ? 'bg-indigo-600 text-white rounded-br-lg' : 'bg-white text-gray-800 rounded-bl-lg shadow-sm'}">${msg.text}</div>`;
+                    fragment.appendChild(messageEl);
+                });
+                chatMessagesContainer.appendChild(fragment);
+            }
+            chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+        }
+        
+        function sendMessage(e) {
+            e.preventDefault();
+            const text = messageInput.value.trim();
+            if (text === '' || !currentChatId) return;
+
+            const match = matches.find(m => m.id === currentChatId);
+            if (!match) return;
+
+            const newMessage = { sender: 'me', text: text };
+            match.messages.push(newMessage);
+            match.lastMessage = text;
+
+            // Move the current chat to the top of the list
+            matches = matches.filter(m => m.id !== currentChatId);
+            matches.unshift(match);
+
+            messageInput.value = '';
+            renderMessages(match);
+            renderChatList();
+        }
+
+        document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
-
 </body>
 </html>
 
